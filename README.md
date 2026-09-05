@@ -8,6 +8,18 @@ The project combines a modern browser-based code editor with real-time collabora
 
 ---
 
+## 📸 Snapshots
+
+### 1. Landing Page
+
+![Cursor & Comma Landing Page](./Screenshot%202026-09-05%20173951(1).png)
+
+### 2. Collaborative Editor
+
+![Cursor & Comma Collaborative Editor](./Screenshot%202026-09-05%20174222(1).png)
+
+---
+
 ## ✨ Features
 
 - 🧑‍💻 **Monaco Code Editor**
