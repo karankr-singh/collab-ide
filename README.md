@@ -1,4 +1,4 @@
-# Cursor & Comma
+<img width="1354" height="631" alt="Screenshot 2026-09-05 173951" src="https://github.com/user-attachments/assets/24d50368-9153-468c-aae1-cc92d08fc506" /># Cursor & Comma
 
 ### Real-Time Collaborative Code Editor & Secure Code Execution Platform
 
@@ -12,11 +12,13 @@ The project combines a modern browser-based code editor with real-time collabora
 
 ### 1. Landing Page
 
-![Cursor & Comma Landing Page](./Screenshot%202026-09-05%20173951(1).png)
+<img width="1354" height="631" alt="Screenshot 2026-09-05 173951" src="https://github.com/user-attachments/assets/2fc9108f-60a8-4c27-bc52-deda725e4fae" />
+
 
 ### 2. Collaborative Editor
 
-![Cursor & Comma Collaborative Editor](./Screenshot%202026-09-05%20174222(1).png)
+<img width="1365" height="643" alt="Screenshot 2026-09-05 174222" src="https://github.com/user-attachments/assets/14d0a1e6-9143-460d-a76f-cbc080e4bf80" />
+
 
 ---
 
