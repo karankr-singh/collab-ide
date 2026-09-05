@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+:root {
+  --ink-950: #10141c;
+  --ink-900: #161b26;
+  --ink-800: #1c2331;
+  --ink-border: #262d3d;
+  --ink-400: #8891a7;
+  --ink-100: #e4e7ef;
+  --accent: #e8a33d;
+  --accent-dim: #a5762b;
+  --ok: #4fd1a5;
+  --err: #e8637a;
+}
+
+@theme inline {
+  --font-ui: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-code: "IBM Plex Mono", ui-monospace, monospace;
+  --color-ink: var(--ink-950);
+  --color-ink-900: var(--ink-900);
+  --color-ink-800: var(--ink-800);
+  --color-ink-border: var(--ink-border);
+  --color-ink-400: var(--ink-400);
+  --color-ink-100: var(--ink-100);
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-ok: var(--ok);
+  --color-err: var(--err);
+}
+
+body {
+  font-family: var(--font-ui);
+}
+
+code,
+.font-code {
+  font-family: var(--font-code);
+}
+
+/* Thin, quiet scrollbars that match the panel chrome */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--ink-border);
+  border-radius: 4px;
+}
+
+/* Visible keyboard focus everywhere, styled to match the accent */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

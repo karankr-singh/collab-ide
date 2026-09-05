@@ -1,0 +1,24 @@
+{
+  "name": "collab-ide-server",
+  "version": "1.0.0",
+  "description": "Realtime sync (Yjs) + secure Docker code execution backend",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "ws": "^8.18.0",
+    "yjs": "^13.6.18",
+    "y-protocols": "^1.0.6",
+    "y-websocket": "^2.0.4",
+    "dockerode": "^4.0.2",
+    "ioredis": "^5.4.1",
+    "bullmq": "^5.12.12",
+    "nanoid": "^5.0.7",
+    "dotenv": "^16.4.5"
+  }
+}
