@@ -403,9 +403,3 @@ The goal is to make collaborative programming possible directly from the browser
 This project is actively under development.
 
 Contributions, suggestions and improvements are welcome.
-
----
-
-## 📄 License
-
-License information will be added as the project approaches its first stable release.
