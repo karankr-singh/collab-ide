@@ -1,105 +1,128 @@
-<img width="1354" height="631" alt="Screenshot 2026-09-05 173951" src="https://github.com/user-attachments/assets/24d50368-9153-468c-aae1-cc92d08fc506" /># Cursor & Comma
+# Cursor & Comma
 
-### Real-Time Collaborative Code Editor & Secure Code Execution Platform
+> A real-time collaborative browser IDE with CRDT-based editing and isolated Docker code execution.
 
-Cursor & Comma is a web-based collaborative IDE that allows multiple users to write and edit code together in real time, while also providing secure server-side code execution inside isolated Docker containers.
+[![Next.js](https://img.shields.io/badge/Next.js-000000?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Yjs](https://img.shields.io/badge/Yjs-CRDT-blue)](https://yjs.dev/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-The project combines a modern browser-based code editor with real-time collaboration, multi-file workspaces, WebSocket synchronization, and sandboxed code execution.
+Cursor & Comma is a full-stack collaborative development environment that lets multiple users edit code in the same browser workspace while synchronizing changes in real time. It also provides server-side execution of supported languages inside temporary, resource-limited Docker containers.
 
----
-
-## 📸 Snapshots
-
-### 1. Landing Page
-
-<img width="1354" height="631" alt="Screenshot 2026-09-05 173951" src="https://github.com/user-attachments/assets/2fc9108f-60a8-4c27-bc52-deda725e4fae" />
-
-
-### 2. Collaborative Editor
-
-<img width="1365" height="643" alt="Screenshot 2026-09-05 174222" src="https://github.com/user-attachments/assets/14d0a1e6-9143-460d-a76f-cbc080e4bf80" />
-
+The project is designed as a systems-focused portfolio project exploring **real-time collaboration, distributed state synchronization, WebSockets, container isolation, and asynchronous job processing**.
 
 ---
 
-## ✨ Features
+## 📸 Screenshots
 
-- 🧑‍💻 **Monaco Code Editor**
-  - VS Code-style editing experience directly in the browser.
-  - Syntax highlighting and modern editor features.
+### Landing Page
 
-- 🤝 **Real-Time Collaboration**
-  - Multiple users can work inside the same session.
-  - Changes are synchronized instantly using **Yjs CRDTs**.
-  - Remote cursor and presence awareness.
+<img width="1354" height="631" alt="Cursor & Comma landing page" src="https://github.com/user-attachments/assets/2fc9108f-60a8-4c27-bc52-deda725e4fae" />
 
-- 📁 **Multi-File Workspace**
-  - Create files.
-  - Switch between files.
-  - Delete files.
-  - Workspace changes are synchronized between connected users.
+### Collaborative Editor
 
-- ⚡ **Code Execution**
-  - Execute supported programming languages directly from the IDE.
-  - Code runs inside isolated Docker containers.
-  - Execution results are returned to the frontend.
+<img width="1365" height="643" alt="Cursor & Comma collaborative editor" src="https://github.com/user-attachments/assets/14d0a1e6-9143-460d-a76f-cbc080e4bf80" />
 
-- 🔒 **Sandboxed Execution**
-  - Containers run as non-root users.
-  - Network access is disabled.
-  - Linux capabilities are dropped.
-  - Memory, CPU and process limits are applied.
-  - Execution has a hard timeout.
-  - Containers are destroyed after execution.
+---
 
-- 🚦 **Execution Queue**
-  - Local development uses an in-memory concurrency limiter.
-  - Redis + BullMQ can be enabled for scalable execution workloads.
+## ✨ Key Features
+
+- **Monaco Editor** — VS Code-style browser editing experience.
+- **Real-time collaboration** — multiple users edit the same workspace through Yjs CRDT synchronization.
+- **Presence awareness** — remote users and cursors are visible during collaboration.
+- **Multi-file workspaces** — create, edit, switch between, and delete files.
+- **WebSocket synchronization** — low-latency communication between clients and the collaboration server.
+- **Isolated code execution** — submitted programs run in temporary Docker containers.
+- **Execution safeguards** — non-root execution, disabled networking, dropped capabilities, resource limits, process limits, and hard timeouts.
+- **Execution queue** — local in-memory concurrency control with optional Redis + BullMQ support for distributed workloads.
 
 ---
 
 ## 🏗️ Architecture
 
 ```text
-                    ┌─────────────────────────┐
-                    │       Web Browser       │
-                    │                         │
-                    │  Next.js + React        │
-                    │  Monaco Editor          │
-                    │  Yjs / y-monaco         │
-                    └────────────┬────────────┘
-                                 │
-                    WebSocket / HTTP API
-                                 │
-                                 ▼
-                    ┌─────────────────────────┐
-                    │       Node Server       │
-                    │                         │
-                    │  Express API            │
-                    │  WebSocket Server       │
-                    │  Yjs Synchronization    │
-                    │  Execution Queue        │
-                    └────────────┬────────────┘
-                                 │
-                         Docker Execution
-                                 │
-                                 ▼
-                    ┌─────────────────────────┐
-                    │    Isolated Container   │
-                    │                         │
-                    │  Python / Node / Go / C │
-                    │  No Network Access      │
-                    │  Resource Limits        │
-                    └─────────────────────────┘
+                         ┌──────────────────────────┐
+                         │        Web Browser       │
+                         │                          │
+                         │  Next.js + React         │
+                         │  Monaco Editor           │
+                         │  Yjs / y-monaco         │
+                         └────────────┬─────────────┘
+                                      │
+                              HTTP / WebSocket
+                                      │
+                                      ▼
+                         ┌──────────────────────────┐
+                         │       Node.js Server     │
+                         │                          │
+                         │  Express REST API        │
+                         │  WebSocket Server       │
+                         │  Yjs Synchronization    │
+                         │  Execution Queue        │
+                         └────────────┬─────────────┘
+                                      │
+                              Docker Execution
+                                      │
+                                      ▼
+                         ┌──────────────────────────┐
+                         │     Temporary Sandbox    │
+                         │                          │
+                         │ Python / Node / Go / C  │
+                         │ No Network Access       │
+                         │ CPU / Memory / PID Caps │
+                         └──────────────────────────┘
 
-                         Optional
-                             │
-                             ▼
-                    ┌─────────────────────────┐
-                    │      Redis + BullMQ     │
-                    │   Scalable Job Queue    │
-                    └─────────────────────────┘
+                                  Optional
+                                     │
+                                     ▼
+                         ┌──────────────────────────┐
+                         │      Redis + BullMQ      │
+                         │   Distributed Job Queue  │
+                         └──────────────────────────┘
 ```
+
+### Collaboration flow
+
+```text
+User A ──► Monaco ──► Yjs ──► WebSocket Server ──► User B
+                                  │
+                                  └───────────────► User C
+```
+
+Each session is backed by a shared Yjs document. Yjs provides conflict-free state synchronization, allowing concurrent edits without implementing traditional server-side merge logic.
+
+---
+
+## 🐳 Code Execution & Isolation
+
+User-submitted code is executed in temporary Docker containers rather than directly on the host machine.
+
+The current execution baseline includes:
+
+- Non-root execution
+- Disabled network access
+- Dropped Linux capabilities
+- `no-new-privileges`
+- Memory limits
+- CPU limits
+- Process limits
+- Hard execution timeout
+- Temporary containers
+- No host filesystem mounts for submitted code
+
+> **Security notice:** This is a development/demo/portfolio sandbox, not a production-grade arbitrary-code execution environment. A production service should use stronger isolation such as gVisor, Firecracker, or another hardened execution architecture.
+
+---
+
+## 💻 Supported Languages
+
+The execution backend currently supports language-specific Docker runtimes for:
+
+- Python
+- Node.js
+- Go
+- C / GCC
 
 ---
 
@@ -107,12 +130,11 @@ The project combines a modern browser-based code editor with real-time collabora
 
 ```text
 collab-ide/
-│
 ├── web/                         # Next.js frontend
-│   ├── app/                     # Application routes & pages
+│   ├── app/                     # Routes and pages
 │   ├── components/              # UI components
 │   ├── hooks/                   # React hooks
-│   ├── lib/                     # Client-side utilities
+│   ├── lib/                     # Client utilities
 │   ├── public/                  # Static assets
 │   └── package.json
 │
@@ -133,110 +155,21 @@ collab-ide/
 
 ## 🛠️ Tech Stack
 
-### Frontend
-
-| Technology | Purpose |
+| Layer | Technologies |
 |---|---|
-| Next.js | Web application framework |
-| React | UI |
-| TypeScript | Type-safe development |
-| Monaco Editor | Code editor |
-| Yjs | CRDT-based collaboration |
-| y-monaco | Monaco + Yjs integration |
-| y-websocket | Real-time synchronization |
-| Tailwind CSS | Styling |
-| Lucide React | Icons |
-
-### Backend
-
-| Technology | Purpose |
-|---|---|
-| Node.js | Runtime |
-| Express | REST API |
-| WebSocket | Real-time communication |
-| Yjs | Collaborative document synchronization |
-| Dockerode | Docker container management |
-| BullMQ | Job queue |
-| Redis | Distributed queue backend |
-| dotenv | Environment configuration |
-
----
-
-## 🔄 How Collaboration Works
-
-Each collaborative session is represented by a shared Yjs document.
-
-```text
-User A
-  │
-  │ Edit
-  ▼
-Monaco Editor
-  │
-  ▼
-Yjs Document
-  │
-  │ WebSocket
-  ▼
-Collaboration Server
-  │
-  ▼
-Yjs Document
-  │
-  ├──────────────► User B
-  │
-  └──────────────► User C
-```
-
-Yjs handles conflict-free synchronization, allowing multiple users to edit the same files simultaneously without requiring traditional server-side merge logic.
-
----
-
-## 🐳 Secure Code Execution
-
-User code is executed inside temporary Docker containers rather than directly on the host machine.
-
-The execution environment applies multiple restrictions, including:
-
-- Non-root execution
-- Disabled network access
-- Dropped Linux capabilities
-- `no-new-privileges`
-- Memory limits
-- CPU limits
-- Process limits
-- Hard execution timeout
-- Temporary containers
-- No host filesystem mounts for submitted code
-
-This provides a safer environment for running user-submitted code.
-
-> **Security Notice:** Container isolation is intended as a baseline for development, demonstration and portfolio use. A production service executing arbitrary code from untrusted users should use stronger isolation technologies such as gVisor or Firecracker.
-
----
-
-## 💻 Supported Languages
-
-The execution backend is designed around isolated language-specific Docker runtimes.
-
-Current runtime configurations include:
-
-```text
-Python
-Node.js
-Go
-C / GCC
-```
-
-Docker images are pulled when required by the execution environment.
+| Frontend | Next.js, React, TypeScript, Tailwind CSS |
+| Editor | Monaco Editor |
+| Collaboration | Yjs, y-monaco, y-websocket |
+| Backend | Node.js, Express, WebSocket |
+| Containers | Docker, Dockerode |
+| Queue | BullMQ, Redis |
+| Tooling | Git, GitHub, npm |
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-
-Make sure you have:
 
 - Node.js 20+
 - npm
@@ -245,16 +178,12 @@ Make sure you have:
 
 Redis is optional for local development.
 
----
-
-### 1. Clone the repository
+### 1. Clone
 
 ```bash
 git clone https://github.com/karankr-singh/collab-ide.git
 cd collab-ide
 ```
-
----
 
 ### 2. Start the backend
 
@@ -264,13 +193,11 @@ npm install
 npm run dev
 ```
 
-The backend will start on:
+Backend:
 
 ```text
 http://localhost:4000
 ```
-
----
 
 ### 3. Start the frontend
 
@@ -282,36 +209,15 @@ npm install
 npm run dev
 ```
 
-The frontend will be available at:
+Frontend:
 
 ```text
 http://localhost:3000
 ```
 
----
+### 4. Optional Redis
 
-## 🔐 Environment Variables
-
-Environment files are intentionally excluded from the repository.
-
-Create the required environment files locally.
-
-Example:
-
-```text
-.env
-.env.local
-```
-
-Never commit API keys, database credentials, Redis credentials or other secrets to GitHub.
-
-For contributors, an `.env.example` file can be used as a template without containing real credentials.
-
----
-
-## ⚡ Optional Redis Setup
-
-For scalable execution queueing, run Redis locally:
+For the distributed execution queue:
 
 ```bash
 docker run -p 6379:6379 redis:7-alpine
@@ -323,44 +229,26 @@ Then configure:
 REDIS_URL=redis://localhost:6379
 ```
 
-The backend can use BullMQ + Redis to distribute execution jobs across multiple server instances.
+---
+
+## 🔐 Environment Variables
+
+Environment files are intentionally excluded from the repository.
+
+Create the required files locally, for example:
+
+```text
+.env
+.env.local
+```
+
+Never commit API keys, database credentials, Redis credentials, or other secrets.
+
+An `.env.example` file can be used for contributor configuration without containing real credentials.
 
 ---
 
-## 🧪 Development
-
-### Frontend
-
-```bash
-cd web
-npm run dev
-```
-
-### Backend
-
-```bash
-cd server
-npm run dev
-```
-
-### Production build
-
-```bash
-cd web
-npm run build
-npm start
-```
-
-Backend:
-
-```bash
-cd server
-npm start
-```
-
----
-
-## 📌 Current Project Status
+## 📌 Project Status
 
 ### Implemented
 
@@ -377,7 +265,7 @@ npm start
 - [x] Execution timeout
 - [x] Redis/BullMQ execution queue support
 
-### Planned / Future Improvements
+### Planned
 
 - [ ] User authentication
 - [ ] Persistent workspaces
@@ -392,28 +280,36 @@ npm start
 
 ---
 
-## 🎯 Project Goals
+## 🎯 Why This Project?
 
-Cursor & Comma aims to provide a lightweight alternative to traditional online coding platforms by combining:
+Cursor & Comma combines several systems problems that are easy to demonstrate poorly but interesting to solve well:
 
 ```text
-Collaborative Editing
+Real-Time Collaboration
         +
-Real-Time Synchronization
+CRDT State Synchronization
         +
-Multi-File Development
+Multi-File Editing
         +
-Secure Code Execution
+Containerized Code Execution
         +
-Scalable Job Processing
+Asynchronous Job Processing
 ```
 
-The goal is to make collaborative programming possible directly from the browser without requiring every participant to configure the same local development environment.
+The project is primarily a learning and engineering exercise in building a collaborative developer tool while dealing with concurrency, distributed state, resource isolation, and backend execution workloads.
 
 ---
 
-## 👨‍💻 Development
+## ⚠️ Limitations
 
-This project is actively under development.
+This project is still under active development. The current sandbox should **not** be treated as sufficient isolation for an internet-facing service that executes arbitrary untrusted code.
 
-Contributions, suggestions and improvements are welcome.
+Some production concerns still require additional work, including hardened isolation, authentication, persistent storage, observability, multi-node coordination, and stronger resource governance.
+
+---
+
+## 👨‍💻 Author
+
+**Karan Kumar Singh**
+
+Built as a systems-oriented full-stack project exploring collaborative development environments, distributed synchronization, and secure code execution.
