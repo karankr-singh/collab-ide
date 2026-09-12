@@ -3,9 +3,6 @@ import cors from "cors";
 import { submitExecution, isRedisBacked } from "./executionQueue.js";
 import { LANGUAGE_CONFIG } from "./dockerRunner.js";
 
-// Very small in-memory rate limiter: N executions per IP per minute.
-// Swap for a Redis-backed limiter (e.g. rate-limiter-flexible) once
-// running multi-node in production.
 const RATE_LIMIT = 15;
 const RATE_WINDOW_MS = 60_000;
 const hits = new Map();
@@ -14,18 +11,49 @@ function rateLimit(req, res, next) {
   const key = req.ip;
   const now = Date.now();
   const bucket = hits.get(key) || [];
-  const recent = bucket.filter((t) => now - t < RATE_WINDOW_MS);
+  const recent = bucket.filter((timestamp) => now - timestamp < RATE_WINDOW_MS);
+
   if (recent.length >= RATE_LIMIT) {
     return res.status(429).json({ error: "Rate limit exceeded. Try again in a minute." });
   }
+
   recent.push(now);
   hits.set(key, recent);
+
+  // Avoid retaining inactive IPs forever in the in-memory limiter.
+  if (hits.size > 10_000) {
+    for (const [ip, timestamps] of hits) {
+      if (!timestamps.some((timestamp) => now - timestamp < RATE_WINDOW_MS)) {
+        hits.delete(ip);
+      }
+    }
+  }
+
   next();
+}
+
+function getCorsOptions() {
+  const configured = (process.env.CORS_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  // Preserve the convenient open policy when no origins are configured.
+  if (configured.length === 0) return {};
+
+  return {
+    origin(origin, callback) {
+      if (!origin || configured.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Origin is not allowed by CORS"));
+    },
+  };
 }
 
 export function createApiServer() {
   const app = express();
-  app.use(cors());
+  app.use(cors(getCorsOptions()));
   app.use(express.json({ limit: "256kb" }));
 
   app.get("/api/health", (_req, res) => {
@@ -45,7 +73,7 @@ export function createApiServer() {
     if (code.length > 50_000) {
       return res.status(400).json({ error: "Code exceeds maximum length (50,000 chars)" });
     }
-    if (!Object.keys(LANGUAGE_CONFIG).includes(language)) {
+    if (!Object.hasOwn(LANGUAGE_CONFIG, language)) {
       return res.status(400).json({
         error: `Unsupported language. Choose one of: ${Object.keys(LANGUAGE_CONFIG).join(", ")}`,
       });
