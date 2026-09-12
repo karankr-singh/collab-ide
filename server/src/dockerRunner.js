@@ -7,8 +7,6 @@ const docker = new Docker(); // connects to /var/run/docker.sock by default
 /**
  * Language -> execution image / command mapping.
  * Each image should be a minimal, pinned, offline-capable image.
- * Build these once with `docker build` from the /images directory (see README),
- * or substitute official slim images as shown below.
  */
 export const LANGUAGE_CONFIG = {
   python: {
@@ -29,25 +27,18 @@ export const LANGUAGE_CONFIG = {
   cpp: {
     image: "gcc:13-slim",
     filename: "main.cpp",
-    // compile then run; combined into one shell invocation
     cmd: (file) => ["sh", "-c", `g++ -O2 -o /tmp/a.out ${file} && /tmp/a.out`],
   },
 };
 
-const MAX_EXEC_MS = 5000; // hard execution timeout
-const MAX_OUTPUT_BYTES = 200_000; // truncate runaway output
-const MEMORY_LIMIT_BYTES = 128 * 1024 * 1024; // 128MB
-const NANO_CPUS = 0.5 * 1e9; // 0.5 CPU
+const MAX_EXEC_MS = 5000;
+const MAX_OUTPUT_BYTES = 200_000;
+const MEMORY_LIMIT_BYTES = 128 * 1024 * 1024;
+const NANO_CPUS = 0.5 * 1e9;
 
 /**
- * Executes `code` for the given `language` inside a locked-down,
- * single-use, non-root, network-isolated container.
- *
- * @param {string} language
- * @param {string} code
- * @param {(chunk: {stream: 'stdout'|'stderr', data: string}) => void} onOutput
- *        Optional streaming callback, called as output arrives.
- * @returns {Promise<{exitCode: number, stdout: string, stderr: string, timedOut: boolean}>}
+ * Executes user code in a single-use, network-isolated container.
+ * The container runs as a non-root user with resource and process limits.
  */
 export async function runCode(language, code, onOutput = () => {}) {
   const config = LANGUAGE_CONFIG[language];
@@ -56,48 +47,65 @@ export async function runCode(language, code, onOutput = () => {}) {
   }
 
   const jobId = nanoid(10);
-  const workdir = `/sandbox/${jobId}`;
+  // /tmp is writable by the non-root container user. Using /sandbox here
+  // caused permission failures on standard slim images because /sandbox did
+  // not exist and a UID 1000 process could not create it at filesystem root.
+  const workdir = `/tmp/collab-ide/${jobId}`;
   const filePath = `${workdir}/${config.filename}`;
 
   let stdout = "";
   let stderr = "";
-  let truncated = false;
+  let outputBytes = 0;
+  let outputTruncated = false;
   let container;
   let timedOut = false;
 
   const appendBounded = (target, chunk) => {
-    if (truncated) return target;
-    const next = target + chunk;
-    if (next.length > MAX_OUTPUT_BYTES) {
-      truncated = true;
-      return next.slice(0, MAX_OUTPUT_BYTES) + "\n[output truncated]";
+    if (outputTruncated) return target;
+    const remaining = MAX_OUTPUT_BYTES - outputBytes;
+    if (remaining <= 0) {
+      outputTruncated = true;
+      return target;
     }
-    return next;
+
+    const bytes = Buffer.byteLength(chunk, "utf8");
+    if (bytes <= remaining) {
+      outputBytes += bytes;
+      return target + chunk;
+    }
+
+    outputTruncated = true;
+    const safe = Buffer.from(chunk, "utf8").subarray(0, remaining).toString("utf8");
+    outputBytes = MAX_OUTPUT_BYTES;
+    return target + safe + "\n[output truncated]";
   };
 
   try {
-    // Create the container in a stopped state first so we can inject the
-    // source file, THEN start it — avoids ever mounting host paths.
     container = await docker.createContainer({
       Image: config.image,
-      Cmd: ["sh", "-c", `mkdir -p ${workdir} && cat > ${filePath} && cd ${workdir} && ${config
-        .cmd(config.filename)
-        .join(" ")}`],
+      Cmd: [
+        "sh",
+        "-c",
+        `mkdir -p ${workdir} && cat > ${filePath} && cd ${workdir} && ${config
+          .cmd(config.filename)
+          .join(" ")}`,
+      ],
+      Env: ["HOME=/tmp", "GOCACHE=/tmp/go-cache"],
       OpenStdin: true,
       StdinOnce: true,
       AttachStdin: true,
       AttachStdout: true,
       AttachStderr: true,
       Tty: false,
-      User: "1000:1000", // non-root
+      User: "1000:1000",
       HostConfig: {
         Memory: MEMORY_LIMIT_BYTES,
-        MemorySwap: MEMORY_LIMIT_BYTES, // disable swap growth
+        MemorySwap: MEMORY_LIMIT_BYTES,
         NanoCpus: NANO_CPUS,
         PidsLimit: 64,
-        NetworkMode: "none", // no network egress at all
-        ReadonlyRootfs: false, // languages need to write compiled artifacts; workdir is ephemeral
-        AutoRemove: false, // we remove explicitly after collecting logs
+        NetworkMode: "none",
+        ReadonlyRootfs: false,
+        AutoRemove: false,
         CapDrop: ["ALL"],
         SecurityOpt: ["no-new-privileges"],
       },
@@ -112,7 +120,6 @@ export async function runCode(language, code, onOutput = () => {}) {
 
     await container.start();
 
-    // Write the user's code to the container's stdin, then close stdin.
     stream.write(code);
     stream.end();
 
@@ -125,6 +132,7 @@ export async function runCode(language, code, onOutput = () => {}) {
       stdout = appendBounded(stdout, text);
       onOutput({ stream: "stdout", data: text });
     });
+
     stderrStream.on("data", (chunk) => {
       const text = chunk.toString("utf8");
       stderr = appendBounded(stderr, text);
@@ -143,7 +151,7 @@ export async function runCode(language, code, onOutput = () => {}) {
       try {
         await container.kill();
       } catch (_) {
-        /* already exited */
+        // Container may have exited between the timeout and kill attempt.
       }
     }
 
@@ -152,13 +160,14 @@ export async function runCode(language, code, onOutput = () => {}) {
       stdout,
       stderr: timedOut ? stderr + "\n[execution timed out]" : stderr,
       timedOut,
+      outputTruncated,
     };
   } finally {
     if (container) {
       try {
         await container.remove({ force: true });
       } catch (_) {
-        /* ignore cleanup errors */
+        // Cleanup should never hide the execution result.
       }
     }
   }
