@@ -2,6 +2,7 @@
 
 > A real-time collaborative browser IDE with CRDT-based editing and isolated Docker code execution.
 
+[![CI](https://github.com/karankr-singh/collab-ide/actions/workflows/ci.yml/badge.svg)](https://github.com/karankr-singh/collab-ide/actions/workflows/ci.yml)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -97,6 +98,31 @@ The execution worker can run directly for local development or through **BullMQ 
 
 > **Security notice:** this is a development/demo sandbox, not a production-grade arbitrary-code execution service. A public multi-tenant product would need stronger isolation, image hardening, observability, authentication, and infrastructure-level controls such as gVisor, Firecracker, or equivalent isolation.
 
+### Docker troubleshooting
+
+The runner uses a non-root UID (`1000:1000`) and writes source code into `/tmp` inside the container. This is intentional: standard slim images may not allow an unprivileged process to create a directory directly under `/`.
+
+If execution fails locally:
+
+1. Confirm Docker Desktop / Docker Engine is running.
+2. Verify the Docker daemon is reachable with `docker info`.
+3. Pull the runtime images before the first run if needed:
+
+```bash
+docker pull python:3.12-slim
+docker pull node:20-slim
+docker pull golang:1.22-alpine
+docker pull gcc:13-slim
+```
+
+4. Confirm the Docker user can start a basic container:
+
+```bash
+docker run --rm hello-world
+```
+
+The collaboration/editor portions do not require Redis. Docker is only required for actual code execution.
+
 ## 💻 Supported languages
 
 | Language | Runtime |
@@ -116,26 +142,30 @@ The execution worker can run directly for local development or through **BullMQ 
 | Backend | Node.js, Express, WebSocket |
 | Execution | Docker, Dockerode |
 | Queue | BullMQ, Redis |
-| Tooling | Git, GitHub, npm |
+| Testing | Node.js built-in test runner |
+| CI | GitHub Actions |
 
 ## 📂 Repository structure
 
 ```text
 collab-ide/
+├── .github/
+│   └── workflows/ci.yml      # CI: frontend build/lint + backend tests
 ├── web/
-│   ├── app/                 # Next.js routes and pages
-│   ├── components/          # UI components
-│   ├── hooks/               # Collaboration/editor hooks
-│   ├── lib/                 # Client utilities
+│   ├── app/                  # Next.js routes and pages
+│   ├── components/           # UI components
+│   ├── hooks/                # Collaboration/editor hooks
+│   ├── lib/                  # Client utilities
 │   └── package.json
 │
 ├── server/
 │   ├── src/
-│   │   ├── api.js           # REST endpoints + validation/rate limiting
-│   │   ├── dockerRunner.js  # Containerized code execution
-│   │   ├── executionQueue.js# Redis/BullMQ + local fallback
-│   │   ├── index.js         # HTTP server bootstrap
-│   │   └── wsServer.js      # WebSocket/Yjs collaboration server
+│   │   ├── api.js            # REST endpoints + validation/rate limiting
+│   │   ├── dockerRunner.js   # Containerized code execution
+│   │   ├── executionQueue.js # Redis/BullMQ + local fallback
+│   │   ├── index.js          # HTTP server bootstrap
+│   │   └── wsServer.js       # WebSocket/Yjs collaboration server
+│   ├── test/api.test.js      # API validation/health tests
 │   └── package.json
 │
 ├── .gitignore
@@ -148,7 +178,7 @@ collab-ide/
 
 - Node.js 20+
 - npm
-- Docker Desktop / Docker Engine
+- Docker Desktop / Docker Engine *(required for code execution)*
 - Git
 - Redis 7+ *(optional for queued execution)*
 
@@ -202,11 +232,27 @@ REDIS_URL=redis://localhost:6379
 EXEC_CONCURRENCY=4
 ```
 
-Without Redis, the server automatically falls back to a bounded in-memory execution path for local demos.
+Without Redis, the server automatically falls back to a bounded in-memory execution path for local development.
+
+### 5. Run backend tests
+
+```bash
+cd server
+npm test
+```
+
+The test suite covers API health, supported-language discovery, invalid execution requests, and input-size validation without requiring Docker to be available.
 
 ## 🔐 Environment variables
 
-Keep local secrets out of Git. Create environment files locally as needed and use an `.env.example` file for contributor-safe configuration.
+Copy `server/.env.example` to `server/.env` for local configuration.
+
+```env
+PORT=4000
+REDIS_URL=redis://localhost:6379
+EXEC_CONCURRENCY=4
+CORS_ORIGINS=http://localhost:3000
+```
 
 Never commit API keys, database credentials, Redis credentials, cloud credentials, or private tokens.
 
@@ -226,6 +272,8 @@ Never commit API keys, database credentials, Redis credentials, cloud credential
 - [x] Execution rate limiting
 - [x] Redis/BullMQ queue support
 - [x] Local execution fallback without Redis
+- [x] Backend API validation tests
+- [x] GitHub Actions CI
 
 ### Next milestones
 
@@ -237,7 +285,7 @@ Never commit API keys, database credentials, Redis credentials, cloud credential
 - [ ] Stronger sandbox isolation
 - [ ] Multi-node collaboration deployment
 - [ ] Kubernetes deployment
-- [ ] Automated integration tests
+- [ ] Broader integration/e2e test coverage
 
 ## 🎯 Engineering takeaways
 
